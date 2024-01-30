@@ -73,9 +73,9 @@ int main(int argc, char **argv)
                 int fdOut = STDOUT_FILENO;
         
                 if (outputFilePath != NULL) {
-                    if (outputType == 1) {
+                    if (outputType == 1 || outputType == 3) {
                         fOutput = fopen(outputFilePath, "w");
-                    } else {
+                    } else if (outputType == 1) {
                         fOutput = fopen(outputFilePath, "a");
                     }
 
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
                     }
                 }
 
-                s_status = executeFullCommand(array_data(&command), STDIN_FILENO, fdOut);
+                s_status = executeFullCommand(array_data(&command), STDIN_FILENO, fdOut, outputType == 3);
 
                 if (outputFilePath != NULL) {
                     fclose(fOutput);
@@ -273,6 +273,10 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
             *argsCount = commandLength - 2;
             *outputType = 2;
             *outputFilePath = lastArg;
+        } else if (strcmp(outputOptial, "2>") == 0) {
+            *argsCount = commandLength - 2;
+            *outputType = 3;
+            *outputFilePath = lastArg;
         }
     }
 
@@ -288,7 +292,7 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
                 return 1;
             }
             lastType = 1;
-        } else if (strcmp(arg, ">") == 0 || strcmp(arg, ">>") == 0) {
+        } else if (strcmp(arg, ">") == 0 || strcmp(arg, ">>") == 0 || strcmp(arg, "2>") == 0) {
             printf("Error: Invalid command!\n");
         } else {
             lastType = 0;
@@ -304,7 +308,7 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
 }
 
 // execute full command
-int executeFullCommand(char** progs, int fd_in, int fd_out) {
+int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error) {
     int handlers[3 * MAX_COMMANDS]; // 3k + 0 - fork, 3k + 1 - read, 3k + 2 write
 
     int progIndex = 0;
@@ -320,6 +324,7 @@ int executeFullCommand(char** progs, int fd_in, int fd_out) {
         // run command part
         int from = 0;
         int to = 0;
+		bool lastCommand = progs[progIndexNext] == 0;
 
         if (progIndex == 0) { // first command
             from = fd_in;
@@ -327,8 +332,8 @@ int executeFullCommand(char** progs, int fd_in, int fd_out) {
             from = handlers[(3 * (k - 1)) + 1];
         }
         
-        if (progs[progIndexNext] == 0) { // last command            
-            to = fd_out;
+        if (lastCommand) { // last command
+			to = fd_out;
         } else {
             if (pipe(&handlers[3 * k + 1]) == -1) {
                 printf("ERROR: Cannot create a pipe!\n");
@@ -368,7 +373,11 @@ int executeFullCommand(char** progs, int fd_in, int fd_out) {
                 return 1;
             } else if (handlers[3 * k] == 0) {
                 dup2(from, STDIN_FILENO);
-                dup2(to, STDOUT_FILENO);
+				if (lastCommand && redirect_error) {
+					dup2(to, STDERR_FILENO);
+				} else {
+					dup2(to, STDOUT_FILENO);
+				}
                 
                 for (int i = 0; i < k; i++)
                 {
