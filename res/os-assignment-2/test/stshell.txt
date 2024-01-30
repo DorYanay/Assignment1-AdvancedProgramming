@@ -1,0 +1,20 @@
+/bin/ls
+ls
+ls ..
+
+cat Makefile | grep : | grep -v #
+cat Makefile | ./encode codecA | grep : | ./decode codecA
+cat Makefile | ./encode codecB | ./decode codecB
+
+./copy -v -f Makefile ./test-dist/Makefile
+
+cat ./test-dist/Makefile | ./encode codecA
+
+cat ./test-dist/Makefile | ./encode codecA > "./test-dist/Makefile encoded"
+cat "test-dist/Makefile encoded" | ./decode codecA > "./test-dist/Makefile decoded"
+./cmp -v ./test-dist/Makefile "./test-dist/Makefile decoded"
+
+cat ./test-dist/Makefile | ./encode codecB > "./test-dist/Makefile encoded"
+cat "test-dist/Makefile encoded" | ./decode codecB > "./test-dist/Makefile decoded"
+./cmp -v ./test-dist/Makefile "./test-dist/Makefile decoded"
+exit

@@ -1,0 +1,17 @@
+# IDE
+.vscode
+
+# build
+bin
+
+# dist
+cmp
+copy
+codecA
+codecB
+encode
+decode
+stshell
+
+# tests
+test-dist
