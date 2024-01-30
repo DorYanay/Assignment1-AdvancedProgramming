@@ -1,3 +1,7 @@
+#include <iostream>
+#include <string>
+#include <vector>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +17,7 @@ struct Options options;
 
 int s_status = -1; // -1 - for running, 0 - stoped, elsewize - error code
 pid_t s_childPid = 0; // 0 - can be closed, elsewize - cannot be closed
+std::string s_promptValue = "hello";
 
 /**
  * @brief Entry point of myshell
@@ -50,7 +55,7 @@ int main(int argc, char **argv)
         array_free(&command);
 
         // read input
-        printf("> ");
+        std::cout << s_promptValue << ": ";
         fflush(stdout);
 
         int errorCode = getCommand(&command, &argsCount, &outputType, &outputFilePath);
@@ -60,7 +65,10 @@ int main(int argc, char **argv)
         }
 
         if (errorCode == 0) {
-
+			if (handleFlowCommands(&command, argsCount)) {
+				continue;
+			}
+			
             s_childPid = fork();
             if (s_childPid < 0) {
                 printf("Error: cannot create a fork!\n");
@@ -306,6 +314,31 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
 
     return 0;
 }
+
+
+bool handleFlowCommands(array* command, int argsCount) {
+	if (argsCount <= 0) {
+		return false;
+	}
+
+	if (strcmp(command->data[0], PROMPT_COMMAND) == 0) {
+		if (argsCount != 3) {
+			printf("Error: Invalid command!\n");
+			return true;
+		}
+
+		if (strcmp(command->data[1], "=") != 0) {
+			printf("Error: Invalid command!\n");
+			return true;
+		}
+
+		s_promptValue = command->data[2];
+		
+		return true;
+	}
+	return false;
+}
+
 
 // execute full command
 int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error) {

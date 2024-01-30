@@ -6,6 +6,7 @@
 #define MAX_COMMANDS 256
 
 #define EXIT_COMMAND "quit"
+#define PROMPT_COMMAND "prompt"
 
 /**
  * @brief The tool options
@@ -50,6 +51,15 @@ int getCommand(array* command, int* argsCount, int* outputType, char** outputFil
  * @return int 0 - good, otherwize - error
  */
 int validCommand(array* command, int* argsCount, int* outputType, char** outputFilePath);
+
+/**
+ * @brief Handle myshell commands (prompt) and return true if the command is myshell command
+ * 
+ * @param command the command args
+ * @param argsCount count of command args
+ * @return is myshell command
+ */
+bool handleFlowCommands(array* command, int argsCount);
 
 /**
  * @brief execute a command, support multi pipes
