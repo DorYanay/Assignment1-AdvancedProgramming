@@ -55,6 +55,8 @@ int getCommand(std::string& input, array* command, int* argsCount, int* outputTy
  */
 int validCommand(array* command, int* argsCount, int* outputType, char** outputFilePath);
 
+bool validVariableChar(char tv);
+
 /**
  * @brief Handle myshell commands (like prompt) and return true if the command is myshell command
  * commands: prompt, cd

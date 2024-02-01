@@ -106,6 +106,21 @@ int main(int argc, char **argv)
 					rawInput += s_variables["?"];
 					i += 1;
 				}
+
+				std::string variableName = "";
+
+				i++;
+
+				while (validVariableChar(input[i]) && i < input.size()) {
+					variableName += input[i];
+					i++;
+				}
+
+				if (s_variables.find(variableName) != s_variables.end()) {
+					rawInput += s_variables[variableName];
+				}
+
+				i--;
 			} else {
 				rawInput += input[i];
 			}
@@ -374,6 +389,26 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
     return 0;
 }
 
+bool validVariableChar(char tv)
+{
+	if (tv >= 'a' && tv <= 'z') {
+		return true;
+	}
+
+	if (tv >= 'A' && tv <= 'Z') {
+		return true;
+	}
+
+	if (tv >= '0' && tv <= '9') {
+		return true;
+	}
+
+	if (tv == '_') {
+		return true;
+	}
+
+	return false;
+}
 
 bool handleFlowCommands(array* command, int argsCount, bool* mainLoopRunning) {
 	if (argsCount <= 0) {
