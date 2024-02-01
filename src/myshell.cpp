@@ -97,7 +97,19 @@ int main(int argc, char **argv)
         
         array_free(&command);
 
-		std::string rawInput = input;
+		std::string rawInput = "";
+
+		for (size_t i = 0; i < input.size(); i++)
+		{
+			if (input[i] == '$' && i + 2 < input.size()) {
+				if (input[i + 1] == '?' && (input[i + 2] == ' ' | input[i + 2] == '\0' | input[i + 2] == '\n' | input[i + 2] == -1)) {
+					rawInput += s_variables["?"];
+					i += 1;
+				}
+			} else {
+				rawInput += input[i];
+			}
+		}
 
         int errorCode = getCommand(rawInput, &command, &argsCount, &outputType, &outputFilePath);
         if (errorCode == 2) {
@@ -159,7 +171,8 @@ int main(int argc, char **argv)
             }
             int childStatus = 0;
             waitpid(childPid, &childStatus, 0);
-			s_variables["?"] = std::to_string(childStatus);
+						
+			s_variables["?"] = std::to_string(childStatus % 255);
         }
     }
 
@@ -416,9 +429,7 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
     int progIndexNext = progIndex;
     int k = 0;
 
-	int executeState = 0;
-
-    while (progs[progIndexNext] != 0 && executeState == 0) {
+    while (progs[progIndexNext] != 0) {
         while (progs[progIndexNext] != 0) {
             progIndexNext++;
         }
@@ -516,10 +527,16 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
         close(handlers[3 * i + 2]);
     }
 
+	int executeState = 0;
+
     for (int i = 0; i < k; i++)
     {
 		int childStatus;
         waitpid(handlers[3 * i], &childStatus, 0);
+
+		if (i + 1 == k) {
+			executeState = childStatus % 255;
+		}
     }
 
     return executeState;
