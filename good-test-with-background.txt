@@ -1,0 +1,42 @@
+(base) ➜  assignment-1-advanced-programming git:(main) ✗ ./myshell
+hello: ls &
+hello: bin  docs  good-test.txt  LICENSE  Makefile  myshell  README.md  res  shell  src
+
+
+hello: sleep 10 &
+hello: if ls | rm a | sleep 10 &
+rm: cannot remove 'a': No such file or directory
+hello: 
+
+hello: 
+
+hello: then    
+hello: ls
+hello: else
+hello: ls -al | grep x | sort
+drwxrwxr-x 25 omer omer  4096 ינו 30 12:57 ..
+drwxrwxr-x  2 omer omer  4096 ינו 30 12:58 .vscode
+drwxrwxr-x  2 omer omer  4096 ינו 30 13:44 docs
+drwxrwxr-x  2 omer omer  4096 פבר  1 16:06 src
+drwxrwxr-x  2 omer omer  4096 פבר  1 19:47 bin
+drwxrwxr-x  5 omer omer  4096 ינו 30 13:44 res
+drwxrwxr-x  8 omer omer  4096 פבר  1 19:27 .git
+drwxrwxr-x  8 omer omer  4096 פבר  1 19:47 .
+-rw-rw-r--  1 omer omer  1133 פבר  1 19:26 good-test.txt
+-rwxrwxr-x  1 omer omer 84312 פבר  1 19:47 myshell
+-rwxrwxr-x  1 omer omer 84312 פבר  1 19:47 shell
+hello: fi
+hello: ls
+bin  docs  good-test.txt  LICENSE  Makefile  myshell  README.md  res  shell  src
+hello: ls -al & > a.txt
+hello: sleep 10 & > a.txt
+hello: if ls | rm a | sleep 10 & > a.txt
+rm: cannot remove 'a': No such file or directory
+hello: then
+hello: ls
+hello: else
+hello: ls    
+a.txt  bin  docs  good-test.txt  LICENSE  Makefile  myshell  README.md  res  shell  src
+hello: fi
+hello: quit
+(base) ➜  assignment-1-advanced-programming git:(main) ✗ 

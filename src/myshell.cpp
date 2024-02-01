@@ -595,6 +595,8 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
     int progIndexNext = progIndex;
     int k = 0;
 
+	bool withBackground = false;
+
     while (progs[progIndexNext] != 0) {
         while (progs[progIndexNext] != 0) {
             progIndexNext++;
@@ -614,6 +616,19 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
         
         if (lastCommand) { // last command
 			to = fd_out;
+			char** lastProg = progs + progIndex;
+			char** beforeLastProg = NULL;
+			
+			while (*lastProg != 0) {
+				beforeLastProg = lastProg;
+				lastProg++;
+			}
+
+			if (strcmp(*beforeLastProg, "&") == 0) {
+				withBackground = true;
+				*(*beforeLastProg - 1) = '\0';
+				*beforeLastProg = NULL;
+			}
         } else {
             if (pipe(&handlers[3 * k + 1]) == -1) {
                 printf("ERROR: Cannot create a pipe!\n");
@@ -694,6 +709,10 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
     }
 
 	int executeState = 0;
+
+	if (withBackground) {
+		k -= 1;
+	}
 
     for (int i = 0; i < k; i++)
     {
