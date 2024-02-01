@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
+#include <string>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +21,8 @@ int s_status = -1; // -1 - for running, 0 - stoped, elsewize - error code
 pid_t s_childPid = 0; // 0 - can be closed, elsewize - cannot be closed
 std::string s_promptValue = "hello";
 
+std::map<std::string, std::string> s_variables;
+
 /**
  * @brief Entry point of myshell
  *
@@ -32,7 +36,7 @@ int main(int argc, char **argv)
     }
 
     // command
-	std::vector<char> lastInput;
+	std::string lastInput;
 
     array command;
     array_create(&command);
@@ -50,7 +54,7 @@ int main(int argc, char **argv)
         std::cout << s_promptValue << ": ";
         fflush(stdout);
 
-		std::vector<char> input;
+		std::string input;
 
 		char tv = getCharFromUser();
 		input.push_back(tv);
@@ -93,7 +97,10 @@ int main(int argc, char **argv)
         
         array_free(&command);
 
-        int errorCode = getCommand(input, &command, &argsCount, &outputType, &outputFilePath);
+		std::string rawInput = input;
+
+
+        int errorCode = getCommand(rawInput, &command, &argsCount, &outputType, &outputFilePath);
         if (errorCode == 2) {
             printf("\n");
             return 0;
@@ -144,6 +151,7 @@ int main(int argc, char **argv)
                 }
 
                 s_status = executeFullCommand(array_data(&command), STDIN_FILENO, fdOut, outputType == 3);
+				s_variables["?"] = std::to_string(s_status);
 
                 if (outputFilePath != NULL) {
                     fclose(fOutput);
@@ -207,7 +215,7 @@ char getCharFromUser() {
     return tv;
 }
 
-int getCommand(std::vector<char>& input, array* command, int* argsCount, int* outputType, char** outputFilePath) {		
+int getCommand(std::string& input, array* command, int* argsCount, int* outputType, char** outputFilePath) {		
 	array_create(command);
 
     char* word = (char*)calloc(STRING_MAXSIZE, 1);

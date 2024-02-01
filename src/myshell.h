@@ -42,7 +42,7 @@ char getCharFromUser();
  * @param outputFilePath file output path, NULL - if defualt output
  * @return int 0 - good, otherwize - error
  */
-int getCommand(std::vector<char>& input, array* command, int* argsCount, int* outputType, char** outputFilePath);
+int getCommand(std::string& input, array* command, int* argsCount, int* outputType, char** outputFilePath);
 
 /**
  * @brief Valid command from the user
