@@ -5,6 +5,10 @@ BIN=bin
 # Compiler
 CXX=g++
 
+# default
+
+default: all
+
 # CI/CD
 clean:
 	rm -rf $(BIN) myshell
@@ -24,11 +28,17 @@ $(BIN)/myshell.o: $(SRC)/myshell.cpp
 myshell: $(BIN) $(BIN)/myshell.o $(BIN)/array.o
 	g++ -fPIC -o myshell $(BIN)/myshell.o $(BIN)/array.o
 
+shell: $(BIN) $(BIN)/myshell.o $(BIN)/array.o
+	g++ -fPIC -o shell $(BIN)/myshell.o $(BIN)/array.o
+
 # build
-all: myshell
+all: myshell shell
 
 rebuild: clean all
 
 # tests
-test-1: rebuild
+test-myshell: rebuild
 	./myshell
+
+test-shell: rebuild
+	./shell
