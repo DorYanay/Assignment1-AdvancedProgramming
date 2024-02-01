@@ -87,6 +87,27 @@ int main(int argc, char **argv)
 
 		lastInput = input;
 
+		if (input.size() > 4 && input[0] == '$') {
+			std::string variableName = "";
+
+			int j = 1;
+
+			while (j < input.size() && validVariableChar(input[j])) {
+				variableName += input[j];
+				j++;
+			}
+
+			if (j != 0 && j + 3 < input.size() && input[j] == ' ' && input[j + 1] == '=' && input[j + 2] == ' ') {
+
+				std::string value = input.substr(j + 3);
+
+				value = value.substr(0, value.size() - 1);
+
+				s_variables[std::string(variableName)] = value;
+				continue;
+			}
+		}
+
         // cleanup
         char* ptr = array_pull(&command);
         while (ptr != NULL)
@@ -451,7 +472,7 @@ bool handleFlowCommands(array* command, int argsCount, bool* mainLoopRunning) {
 		
 		return true;
 	}
-
+	
 	return false;
 }
 
