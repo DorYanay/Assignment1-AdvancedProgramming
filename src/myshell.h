@@ -31,6 +31,8 @@ void signalMainHandler(int signalNumber);
  */
 void signalChildHandler(int signalNumber);
 
+char getCharFromUser();
+
 /**
  * @brief Get command from the user
  * 
@@ -40,7 +42,7 @@ void signalChildHandler(int signalNumber);
  * @param outputFilePath file output path, NULL - if defualt output
  * @return int 0 - good, otherwize - error
  */
-int getCommand(array* command, int* argsCount, int* outputType, char** outputFilePath);
+int getCommand(std::vector<char>& input, array* command, int* argsCount, int* outputType, char** outputFilePath);
 
 /**
  * @brief Valid command from the user

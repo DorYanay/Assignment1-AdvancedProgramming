@@ -58,7 +58,18 @@ int main(int argc, char **argv)
         std::cout << s_promptValue << ": ";
         fflush(stdout);
 
-        int errorCode = getCommand(&command, &argsCount, &outputType, &outputFilePath);
+		std::vector<char> input;
+
+		char tv = getCharFromUser();
+		input.push_back(tv);
+		
+		while (tv != -1 && tv != '\n' && tv != '\0')
+		{
+			tv = getCharFromUser();
+			input.push_back(tv);
+		}
+
+        int errorCode = getCommand(input, &command, &argsCount, &outputType, &outputFilePath);
         if (errorCode == 2) {
             printf("\n");
             return 0;
@@ -145,6 +156,11 @@ void signalMainHandler(int signalNumber)
         return;
     }
 
+	std::cout << "\nYou typed Control-C\n";
+	
+	std::cout << s_promptValue << ": ";
+	fflush(stdout);
+
     signal(SIGINT, SIG_IGN);
 }
 
@@ -167,15 +183,16 @@ char getCharFromUser() {
     return tv;
 }
 
-int getCommand(array* command, int* argsCount, int* outputType, char** outputFilePath) {
-    array_create(command);
+int getCommand(std::vector<char>& input, array* command, int* argsCount, int* outputType, char** outputFilePath) {		
+	array_create(command);
 
     char* word = (char*)calloc(STRING_MAXSIZE, 1);
 
     char* wordPtr = word;
 
     char inString = 0;
-    char tv = getCharFromUser();
+    char tv = input.front();
+	input.erase(input.begin());
 
     if (tv == -1) {
         return 2;
@@ -206,7 +223,8 @@ int getCommand(array* command, int* argsCount, int* outputType, char** outputFil
             }
         } else {
             if (tv == '\"') {
-                tv = getCharFromUser();
+                tv = input.front();
+				input.erase(input.begin());
                 if (tv == -1) {
                     return 2;
                 }
@@ -233,7 +251,8 @@ int getCommand(array* command, int* argsCount, int* outputType, char** outputFil
         }
         
         if (tv != '\n' && tv != '\0') {
-            tv = getCharFromUser();
+            tv = input.front();
+			input.erase(input.begin());
             if (tv == -1) {
                 return 2;
             }
