@@ -472,6 +472,41 @@ bool handleFlowCommands(array* command, int argsCount, bool* mainLoopRunning) {
 		
 		return true;
 	}
+
+	if (strcmp(command->data[0], READ_COMMAND) == 0) {
+		if (argsCount != 2) {
+			printf("Error: Invalid command!\n");
+			return true;
+		}
+
+		std::string variableName = std::string(command->data[1]);
+
+		for (size_t i = 0; i < variableName.size(); i++)
+		{
+			if (!validVariableChar(variableName[i])) {
+				printf("Error: Invalid variable name!\n");
+				return true;
+			}
+		}
+
+		std::string value = "";
+
+		char tv = getCharFromUser();
+		value.push_back(tv);
+
+		while (tv != -1 && tv != '\n' && tv != '\0')
+		{
+			tv = getCharFromUser();
+			value.push_back(tv);
+		}
+
+		value = value.substr(0, value.size() - 1);
+
+		s_variables[variableName] = value;
+		
+		return true;
+	}
+
 	
 	return false;
 }

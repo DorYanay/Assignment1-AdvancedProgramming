@@ -8,6 +8,7 @@
 #define EXIT_COMMAND "quit"
 #define PROMPT_COMMAND "prompt"
 #define CD_COMMAND "cd"
+#define READ_COMMAND "read"
 
 /**
  * @brief The tool options
