@@ -7,6 +7,7 @@
 
 #define EXIT_COMMAND "quit"
 #define PROMPT_COMMAND "prompt"
+#define CD_COMMAND "cd"
 
 /**
  * @brief The tool options
@@ -53,7 +54,8 @@ int getCommand(array* command, int* argsCount, int* outputType, char** outputFil
 int validCommand(array* command, int* argsCount, int* outputType, char** outputFilePath);
 
 /**
- * @brief Handle myshell commands (prompt) and return true if the command is myshell command
+ * @brief Handle myshell commands (like prompt) and return true if the command is myshell command
+ * commands: prompt, cd
  * 
  * @param command the command args
  * @param argsCount count of command args

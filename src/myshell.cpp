@@ -336,6 +336,23 @@ bool handleFlowCommands(array* command, int argsCount) {
 		
 		return true;
 	}
+
+	if (strcmp(command->data[0], CD_COMMAND) == 0) {
+		if (argsCount != 2) {
+			printf("Error: Invalid command!\n");
+			return true;
+		}
+
+		char* dirPath = command->data[1];
+		
+		if (chdir(dirPath) != 0) {
+			printf("Error: Cannot change directory!\n");
+			return true;
+		}
+		
+		return true;
+	}
+
 	return false;
 }
 
