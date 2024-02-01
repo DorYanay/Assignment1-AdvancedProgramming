@@ -60,7 +60,6 @@ bool validVariableChar(char tv);
 
 /**
  * @brief Handle myshell commands (like prompt) and return true if the command is myshell command
- * commands: prompt, cd
  * 
  * @param command the command args
  * @param argsCount count of command args

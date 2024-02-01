@@ -21,6 +21,10 @@ std::string s_promptValue = "hello";
 
 std::map<std::string, std::string> s_variables;
 
+// if else support
+int s_ifState = 0; // 0 - not in if, 1 - in if, 2 - wait for then, 3 - in if block, 4 in else block
+bool s_ifCondition = false;
+
 /**
  * @brief Entry point of myshell
  *
@@ -157,6 +161,14 @@ int main(int argc, char **argv)
 			if (handleFlowCommands(&command, argsCount, &mainLoopRunning)) {
 				continue;
 			}
+
+			array cleanedCommend = command;
+
+			if (s_ifState == 1) {
+				cleanedCommend.size = cleanedCommend.size - 1;
+				cleanedCommend.data = cleanedCommend.data + 1;
+				argsCount -= 1;
+			}
 			
             pid_t childPid = fork();
             if (childPid < 0) {
@@ -183,21 +195,21 @@ int main(int argc, char **argv)
 
                     fdOut = fileno(fOutput);
 
-                    array_set(&command, argsCount, 0);
-                    array_set(&command, argsCount + 1, 0);
+                    array_set(&cleanedCommend, argsCount, 0);
+                    array_set(&cleanedCommend, argsCount + 1, 0);
                 } else {
-                    array_push(&command, 0);
-                    array_push(&command, 0);
+                    array_push(&cleanedCommend, 0);
+                    array_push(&cleanedCommend, 0);
                 }
 
                 for (size_t i = 0; i < argsCount; i++)
                 {
-                    if (strcmp(array_get(&command, i), "|") == 0) {
-                        array_set(&command, i, 0);
+                    if (strcmp(array_get(&cleanedCommend, i), "|") == 0) {
+                        array_set(&cleanedCommend, i, 0);
                     }
                 }
 
-            	int status = executeFullCommand(array_data(&command), STDIN_FILENO, fdOut, outputType == 3);
+            	int status = executeFullCommand(array_data(&cleanedCommend), STDIN_FILENO, fdOut, outputType == 3);
 
                 if (outputFilePath != NULL) {
                     fclose(fOutput);
@@ -209,6 +221,10 @@ int main(int argc, char **argv)
             waitpid(childPid, &childStatus, 0);
 						
 			s_variables["?"] = std::to_string(childStatus % 255);
+
+			if (s_ifState == 1) {
+				s_ifCondition = (childStatus % 255) == 0;
+			}
         }
     }
 
@@ -432,7 +448,55 @@ bool validVariableChar(char tv)
 }
 
 bool handleFlowCommands(array* command, int argsCount, bool* mainLoopRunning) {
+	if (s_ifState == 1) {
+		s_ifState = 2;
+	}
+
+	if (s_ifState == 2) {
+		if (argsCount != 1) {
+			printf("must be 'then'\n");
+			return true;
+		}
+
+		if (strcmp(command->data[0], "then") != 0) {
+			printf("must be 'then'\n");
+			return true;
+		}
+
+		s_ifState = 3;
+		return true;
+	}
+
+	if (s_ifState == 3 && argsCount == 1 && strcmp(command->data[0], "else") == 0) {
+		s_ifState = 4;
+		return true;
+	}
+
+	if (s_ifState == 3 && argsCount == 1 && strcmp(command->data[0], "fi") == 0) {
+		s_ifState = 0;
+		return true;
+	}
+
+	if (s_ifState == 4 && argsCount == 1 && strcmp(command->data[0], "fi") == 0) {
+		s_ifState = 0;
+		return true;
+	}
+
+	if (s_ifState == 3 && s_ifCondition == false) {
+		return true;
+	}
+
+	if (s_ifState == 4 && s_ifCondition) {
+		return true;
+	}
+	
 	if (argsCount <= 0) {
+		return false;
+	}
+
+	if (strcmp(command->data[0], "if") == 0) {
+		s_ifState = 1;
+		s_ifCondition = false;
 		return false;
 	}
 
@@ -507,14 +571,13 @@ bool handleFlowCommands(array* command, int argsCount, bool* mainLoopRunning) {
 		return true;
 	}
 
-	
 	return false;
 }
 
 
 // execute full command
-int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error) {
-    int handlers[3 * MAX_COMMANDS]; // 3k + 0 - fork, 3k + 1 - read, 3k + 2 write
+int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error) {	
+	int handlers[3 * MAX_COMMANDS]; // 3k + 0 - fork, 3k + 1 - read, 3k + 2 write
 
     int progIndex = 0;
     int progIndexNext = progIndex;
