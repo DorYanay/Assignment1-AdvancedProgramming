@@ -6,8 +6,7 @@ BIN=bin
 CXX=g++
 
 # default
-
-default: all
+default: rebuild
 
 # CI/CD
 clean:

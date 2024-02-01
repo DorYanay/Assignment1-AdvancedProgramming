@@ -179,21 +179,29 @@ int main(int argc, char **argv)
 
                 // execute the command
                 FILE *fOutput = NULL;
+
+				int fdIn = STDIN_FILENO;
                 int fdOut = STDOUT_FILENO;
         
                 if (outputFilePath != NULL) {
                     if (outputType == 1 || outputType == 3) {
                         fOutput = fopen(outputFilePath, "w");
-                    } else if (outputType == 1) {
+                    } else if (outputType == 2) {
                         fOutput = fopen(outputFilePath, "a");
-                    }
+                    } else if (outputType == 4) {
+						fOutput = fopen(outputFilePath, "r");
+					}
 
                     if (fOutput == NULL) {
-                        printf("Error: cannot accses output file!\n");
+                        printf("Error: cannot accses input/output file!\n");
                         return 1;
                     }
 
-                    fdOut = fileno(fOutput);
+					if (outputType == 4) {
+						fdIn = fileno(fOutput);
+					} else {
+						fdOut = fileno(fOutput);
+					}
 
                     array_set(&cleanedCommend, argsCount, 0);
                     array_set(&cleanedCommend, argsCount + 1, 0);
@@ -209,7 +217,7 @@ int main(int argc, char **argv)
                     }
                 }
 
-            	int status = executeFullCommand(array_data(&cleanedCommend), STDIN_FILENO, fdOut, outputType == 3);
+            	int status = executeFullCommand(array_data(&cleanedCommend), fdIn, fdOut, outputType == 3);
 
                 if (outputFilePath != NULL) {
                     fclose(fOutput);
@@ -395,6 +403,10 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
         } else if (strcmp(outputOptial, "2>") == 0) {
             *argsCount = commandLength - 2;
             *outputType = 3;
+            *outputFilePath = lastArg;
+        } else if (strcmp(outputOptial, "<") == 0) {
+            *argsCount = commandLength - 2;
+            *outputType = 4;
             *outputFilePath = lastArg;
         }
     }
