@@ -17,8 +17,6 @@
 // globals
 struct Options options;
 
-int s_status = -1; // -1 - for running, 0 - stoped, elsewize - error code
-pid_t s_childPid = 0; // 0 - can be closed, elsewize - cannot be closed
 std::string s_promptValue = "hello";
 
 std::map<std::string, std::string> s_variables;
@@ -45,8 +43,10 @@ int main(int argc, char **argv)
     int outputType;
     char* outputFilePath;
 
+	bool mainLoopRunning = true;
+
     // Main Loop
-    while (s_status == -1)
+    while (mainLoopRunning)
     {		
         signal(SIGINT, signalMainHandler);
 
@@ -99,7 +99,6 @@ int main(int argc, char **argv)
 
 		std::string rawInput = input;
 
-
         int errorCode = getCommand(rawInput, &command, &argsCount, &outputType, &outputFilePath);
         if (errorCode == 2) {
             printf("\n");
@@ -107,15 +106,15 @@ int main(int argc, char **argv)
         }
 
         if (errorCode == 0) {
-			if (handleFlowCommands(&command, argsCount)) {
+			if (handleFlowCommands(&command, argsCount, &mainLoopRunning)) {
 				continue;
 			}
 			
-            s_childPid = fork();
-            if (s_childPid < 0) {
+            pid_t childPid = fork();
+            if (childPid < 0) {
                 printf("Error: cannot create a fork!\n");
                 continue;
-            } else if (s_childPid == 0) {
+            } else if (childPid == 0) {
                 signal(SIGINT, signalChildHandler);
 
                 // execute the command
@@ -150,21 +149,17 @@ int main(int argc, char **argv)
                     }
                 }
 
-                s_status = executeFullCommand(array_data(&command), STDIN_FILENO, fdOut, outputType == 3);
-				s_variables["?"] = std::to_string(s_status);
+            	int status = executeFullCommand(array_data(&command), STDIN_FILENO, fdOut, outputType == 3);
 
                 if (outputFilePath != NULL) {
                     fclose(fOutput);
                 }
 
-                return s_status;
+                return status;
             }
             int childStatus = 0;
-            waitpid(s_childPid, &childStatus, 0);
-            if (childStatus == 0) {
-                s_status = childStatus;
-            }
-            s_childPid = 0;
+            waitpid(childPid, &childStatus, 0);
+			s_variables["?"] = std::to_string(childStatus);
         }
     }
 
@@ -178,7 +173,7 @@ int main(int argc, char **argv)
         
     array_free(&command);
     
-    return s_status;
+    return 0;
 }
 
 // handlers
@@ -367,11 +362,16 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
 }
 
 
-bool handleFlowCommands(array* command, int argsCount) {
+bool handleFlowCommands(array* command, int argsCount, bool* mainLoopRunning) {
 	if (argsCount <= 0) {
 		return false;
 	}
 
+	if (strcmp(command->data[0], EXIT_COMMAND) == 0) {
+		*mainLoopRunning = false;
+		return true;
+	}
+	
 	if (strcmp(command->data[0], PROMPT_COMMAND) == 0) {
 		if (argsCount != 3) {
 			printf("Error: Invalid command!\n");
@@ -416,7 +416,9 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
     int progIndexNext = progIndex;
     int k = 0;
 
-    while (progs[progIndexNext] != 0 && s_status == -1) {
+	int executeState = 0;
+
+    while (progs[progIndexNext] != 0 && executeState == 0) {
         while (progs[progIndexNext] != 0) {
             progIndexNext++;
         }
@@ -455,63 +457,58 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
             to = handlers[3 * k + 2];
         }
 
-        if (strcmp(*(progs + progIndex), EXIT_COMMAND) == 0) {
-            // exit command
-            s_status = 0;
-        } else {
-            handlers[3 * k] = fork();
-            if (handlers[3 * k] < 0) {
-                printf("ERROR: Cannot create a fork!\n");
-                
-                // Cleanup
-                for (size_t i = 0; i < k; i++)
-                {
-                    kill(handlers[3 * i], SIGKILL);
-                    close(handlers[3 * i + 1]);
-                    close(handlers[3 * i + 2]);
-                }
+		handlers[3 * k] = fork();
+		if (handlers[3 * k] < 0) {
+			printf("ERROR: Cannot create a fork!\n");
+			
+			// Cleanup
+			for (size_t i = 0; i < k; i++)
+			{
+				kill(handlers[3 * i], SIGKILL);
+				close(handlers[3 * i + 1]);
+				close(handlers[3 * i + 2]);
+			}
 
-                return 1;
-            } else if (handlers[3 * k] == 0) {
-                dup2(from, STDIN_FILENO);
-				if (lastCommand && redirect_error) {
-					dup2(to, STDERR_FILENO);
-				} else {
-					dup2(to, STDOUT_FILENO);
-				}
-                
-                for (int i = 0; i < k; i++)
-                {
-                    close(handlers[3 * i + 1]);
-                    close(handlers[3 * i + 2]);
-                }
+			return 1;
+		} else if (handlers[3 * k] == 0) {
+			dup2(from, STDIN_FILENO);
+			if (lastCommand && redirect_error) {
+				dup2(to, STDERR_FILENO);
+			} else {
+				dup2(to, STDOUT_FILENO);
+			}
+			
+			for (int i = 0; i < k; i++)
+			{
+				close(handlers[3 * i + 1]);
+				close(handlers[3 * i + 2]);
+			}
 
-                if (progs[progIndexNext] != 0) { // not last command
-                    close(handlers[3 * k + 1]);
-                    close(handlers[3 * k + 2]);
-                }
-                
-                execvp(*(progs + progIndex), progs + progIndex);
+			if (progs[progIndexNext] != 0) { // not last command
+				close(handlers[3 * k + 1]);
+				close(handlers[3 * k + 2]);
+			}
+			
+			execvp(*(progs + progIndex), progs + progIndex);
 
-                // faild
-                printf("ERROR: command failed!\n");
+			// faild
+			printf("ERROR: command failed!\n");
 
-                // Cleanup
-                for (size_t i = 0; i < k; i++)
-                {
-                    kill(handlers[3 * i], SIGKILL);
-                    close(handlers[3 * i + 1]);
-                    close(handlers[3 * i + 2]);
-                }
+			// Cleanup
+			for (size_t i = 0; i < k; i++)
+			{
+				kill(handlers[3 * i], SIGKILL);
+				close(handlers[3 * i + 1]);
+				close(handlers[3 * i + 2]);
+			}
 
-                return 1;
-            }
+			return 1;
+		}
 
-            // nextLoop
-            progIndex = progIndexNext;
-            k++;
-        }
-    }
+		// nextLoop
+		progIndex = progIndexNext;
+		k++;
+	}
 
     for (int i = 0; i < k; i++)
     {
@@ -521,8 +518,9 @@ int executeFullCommand(char** progs, int fd_in, int fd_out, bool redirect_error)
 
     for (int i = 0; i < k; i++)
     {
-        waitpid(handlers[3 * i], &s_childPid, 0);
+		int childStatus;
+        waitpid(handlers[3 * i], &childStatus, 0);
     }
 
-    return s_status;
+    return executeState;
 }

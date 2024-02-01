@@ -63,7 +63,7 @@ int validCommand(array* command, int* argsCount, int* outputType, char** outputF
  * @param argsCount count of command args
  * @return is myshell command
  */
-bool handleFlowCommands(array* command, int argsCount);
+bool handleFlowCommands(array* command, int argsCount, bool* mainLoopRunning);
 
 /**
  * @brief execute a command, support multi pipes
