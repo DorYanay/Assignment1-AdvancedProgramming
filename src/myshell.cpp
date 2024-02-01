@@ -32,6 +32,8 @@ int main(int argc, char **argv)
     }
 
     // command
+	std::vector<char> lastInput;
+
     array command;
     array_create(&command);
 
@@ -41,20 +43,10 @@ int main(int argc, char **argv)
 
     // Main Loop
     while (s_status == -1)
-    {
+    {		
         signal(SIGINT, signalMainHandler);
 
-        // cleanup
-        char* ptr = array_pull(&command);
-        while (ptr != NULL)
-        {
-            free(ptr);
-            ptr = array_pull(&command);
-        }
-        
-        array_free(&command);
-
-        // read input
+		// read input
         std::cout << s_promptValue << ": ";
         fflush(stdout);
 
@@ -68,6 +60,38 @@ int main(int argc, char **argv)
 			tv = getCharFromUser();
 			input.push_back(tv);
 		}
+
+		if (input.size() >= 3) {
+			if (input[0] == '!' && input[1] == '!' && (input[2] == ' ' || input[2] == -1 || input[2] == '\n' || input[2] == '\0')) {
+				if (input[2] == ' ') {
+					input.erase(input.begin(), input.begin() + 2);
+					input.insert(input.begin(), lastInput.begin(), lastInput.end() - 1);
+				} else {
+					input = lastInput;
+				}
+
+				std::cout << s_promptValue << ": ";
+				for (size_t i = 0; i < input.size() - 1; i++)
+				{
+					std::cout << input[i];
+				}
+				std::cout << "\n";
+
+				fflush(stdout);
+			}
+		}
+
+		lastInput = input;
+
+        // cleanup
+        char* ptr = array_pull(&command);
+        while (ptr != NULL)
+        {
+            free(ptr);
+            ptr = array_pull(&command);
+        }
+        
+        array_free(&command);
 
         int errorCode = getCommand(input, &command, &argsCount, &outputType, &outputFilePath);
         if (errorCode == 2) {
